@@ -1,53 +1,78 @@
 #!/usr/bin/env python3
 
-# from openai import OpenAI
-# from google import genai
-from dotenv import load_dotenv
-from groq import Groq
-import os
-
-# Load variables from .env
-load_dotenv()
-
-# Create connection to OpenAI API
-client = Groq(
-    api_key=os.getenv("GROQ_API_KEY")
-)
-# client = genai.Client(
-#     api_key=os.getenv("GEMINI_API_KEY")
-# )
-# client = OpenAI(
-#     api_key=os.getenv("OPENAI_API_KEY")
-# )
-
-def testAPI():
-
-    # Send a request to the model
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {
-                "role": "user",
-                "content": "Explain what an API is"
-            }
-        ]
-    )
-    # response = client.models.generate_content(
-    #     model="gemini-2.0-flash",
-    #     contents="Explain what an API is in one sentence."
-    # )
-    # response = client.responses.create(
-    #     model="gpt-5-mini",
-    #     input="Explain what an API is in one sentence."
-    # )
-
-    # Print the AI response
-    print(response.choices[0].message.content)
-    #print(response.text)
-    # print(response.output_text)
+from assistant import Assistant
+from file_tools import read_file
 
 def main():
-    testAPI()
+
+    assistant = Assistant()
+
+    print("AI Assistant started. Type 'exit' to quit.")
+
+    while True:
+        user_input = input("\nYou: ")
+
+        if user_input == "exit" or user_input == "q" or user_input == "quit":
+            break
+
+        elif user_input == "/clear":
+            assistant.clear_history()
+            print("\nAssistant:")
+            print("Conversation cleared.")
+            continue
+
+        elif user_input == "/model":
+            print("\nAssistant:")
+            print(f"Current Model: {assistant.get_model()}")
+            continue
+
+        elif user_input == "/history":
+            print("\nAssistant:")
+            print(f"Messages in history: {assistant.get_history()}")
+            continue
+
+        elif "/summarize" in user_input:
+            parts = user_input.split(" ")
+            if len(parts) < 2:
+                print("Usage: /summarize <filename>")
+                continue
+            
+            filename = parts[1]
+            content = read_file(filename)
+
+            if content is None:
+                print("File not found.")
+                continue
+
+            summary = assistant.summarize(content)
+            print("\nAssistant:")
+            print(summary)
+
+            continue
+
+        elif "/review" in user_input:
+            parts = user_input.split(" ")
+            if len(parts) < 2:
+                print("Usage: /review <filename>")
+                continue
+            
+            filename = parts[1]
+            content = read_file(filename)
+            
+            if content is None:
+                print("File not found.")
+                continue
+
+            review = assistant.review_code(content)
+            print("\nAssistant:")
+            print(review)
+
+            continue
+
+        response = assistant.send_message(user_input)
+
+        print("\nAssistant:")
+        print(response)
 
 if __name__ == "__main__":
     main()
