@@ -1,6 +1,13 @@
 from config import GROQ_API_KEY, MODEL_NAME
 from groq import Groq
 
+SYSTEM_PROMPT = (
+    "You are a helpful AI assistant. "
+    "Answer questions clearly and concisely. "
+    "Do not claim to have memory outside "
+    "of the current conversation."
+)
+
 class Assistant:
 
     def __init__(self):
@@ -8,16 +15,10 @@ class Assistant:
         self.client = Groq(
             api_key=GROQ_API_KEY
         )
-
         self.messages = [
             {
                 "role": "system",
-                "content": (
-                    "You are a helpful AI assistant. "
-                    "Answer questions clearly and concisely. "
-                    "Do not claim to have memory outside "
-                    "of the current conversation."
-                )
+                "content": SYSTEM_PROMPT
             }
         ]
 
@@ -30,12 +31,19 @@ class Assistant:
             }
         )
 
-        response = self.client.chat.completions.create(
+        stream = self.client.chat.completions.create(
             model=MODEL_NAME,
-            messages=self.messages
+            messages=self.messages,
+            stream=True
         )
 
-        assistant_response = response.choices[0].message.content
+        assistant_response = ""
+        for chunk in stream:
+            content = chunk.choices[0].delta.content
+            if content:
+                print(content, end="", flush=True)
+                assistant_response += content
+        print()
 
         self.messages.append(
             {
@@ -43,19 +51,12 @@ class Assistant:
                 "content": assistant_response
             }
         )
-
-        return assistant_response
     
     def clear_history(self):
         self.messages = [
             {
                 "role": "system",
-                "content": (
-                    "You are a helpful AI assistant. "
-                    "Answer questions clearly and concisely. "
-                    "Do not claim to have memory outside "
-                    "of the current conversation."
-                )
+                "content": SYSTEM_PROMPT
             }
         ]
     
